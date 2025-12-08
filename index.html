@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Исследование психических состояний и принятия решений - Нсубуга Мозес</title>
+    <script src="https://unpkg.com/jspsych@7.3.4"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-likert@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-instructions@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.3"></script>
+    <link rel="stylesheet" href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css">
+    <style>
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .jspsych-display-element {
+            font-size: 18px;
+            line-height: 1.6;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+        .jspsych-survey-likert-statement {
+            font-size: 18px;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #4a6fa5;
+        }
+        .jspsych-btn {
+            font-size: 18px;
+            padding: 12px 30px;
+            margin: 5px;
+            background-color: #4a6fa5;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .jspsych-btn:hover {
+            background-color: #3a5a80;
+        }
+        .instructions {
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        .timed-warning {
+            color: #d32f2f;
+            font-weight: bold;
+            font-size: 24px;
+            animation: pulse 1.5s infinite;
+            border: 3px solid #d32f2f;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #ffebee;
+            text-align: center;
+            margin: 30px 0;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        .section-title {
+            font-size: 28px;
+            color: #2c3e50;
+            margin: 40px 0 25px 0;
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #4a6fa5;
+            font-weight: bold;
+        }
+        .untimed-note {
+            color: #2e7d32;
+            font-style: italic;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-left: 5px solid #4caf50;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .timer-display {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #d32f2f;
+            background-color: #ffebee;
+            padding: 12px 18px;
+            border-radius: 10px;
+            border: 3px solid #d32f2f;
+            z-index: 1000;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .researcher-info {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #2196f3;
+        }
+        .scale-description {
+            background-color: #f3e5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 5px solid #9c27b0;
+        }
+        .demographic-box {
+            background-color: #e8f5e9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px solid #4caf50;
+        }
+        .critical-instruction {
+            background-color: #fff3cd;
+            border: 3px solid #ffc107;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 25px 0;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .response-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin: 25px 0;
+            text-align: center;
+            font-size: 14px;
+        }
+        .progress-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background-color: #e0e0e0;
+            z-index: 999;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #4a6fa5;
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-container">
+        <div class="progress-bar" id="progress-bar"></div>
+    </div>
+
+    <div id="jspsych-experiment"></div>
+
+    <script>
+        // ========================
+        // ИНИЦИАЛИЗАЦИЯ И ПЕРЕМЕННЫЕ
+        // ========================
+        let currentLanguage = 'russian';
+        let randomNumber = null;
+        let experimentGroup = null;
+        let totalTrials = 190;
+        let completedTrials = 0;
+
+        // Обновление прогресса
+        function updateProgress() {
+            if (totalTrials > 0) {
+                const progress = (completedTrials / totalTrials) * 100;
+                document.getElementById('progress-bar').style.width = progress + '%';
+            }
+        }
+
+        // Определение группы по случайному числу
+        function determineGroup(randomNum) {
+            if (!randomNum) return 'gain_low'; // По умолчанию
+
+            const num = parseInt(randomNum);
+            if ([1].includes(num)) return 'loss_low';
+            if ([2, 5, 7, 12].includes(num)) return 'gain_high';
+            if ([3, 4, 8].includes(num)) return 'loss_high';
+            if ([6, 9, 10, 11].includes(num)) return 'gain_low';
+            return 'gain_low'; // По умолчанию
+        }
+
+        // Сохранение данных
+        function saveData() {
+            const data = jsPsych.data.get().json();
+            const csvData = jsPsych.data.get().csv();
+
+            // Создание файла для скачивания
+            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `исследование_${Date.now()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Инициализация jsPsych
+        const jsPsych = initJsPsych({
+            display_element: 'jspsych-experiment',
+            on_finish: function() {
+                saveData();
+                showCompletionScreen();
+            },
+            on_trial_finish: function() {
+                completedTrials++;
+                updateProgress();
+            },
+            show_progress_bar: false,
+            default_iti: 250
+        });
+
+        // ========================
+        // ТАЙМЛАЙН ЭКСПЕРИМЕНТА
+        // ========================
+        const timeline = [];
+
+        // ========================
+        // 1. ПРИВЕТСТВИЕ
+        // ========================
+        timeline.push({
+            type: jsPsychInstructions,
+            pages: [
+                `<div class="instructions">
+                    <h1 style="text-align: center; color: #2c3e50;">🧠 Исследование психических состояний и принятия решений</h1>
+
+                    <div class="researcher-info">
+                        <h3>Информация об исследователе:</h3>
+                        <p><strong>Исследователь:</strong> Нсубуга Мозес (Nsubuga Moses)</p>
+                        <p><strong>Учреждение:</strong> Казанский федеральный университет</p>
+                        <p><strong>Факультет:</strong> Психологии</p>
+                    </div>
+
+                    <p>Дорогой участник,</p>
+                    <p>Приглашаем Вас принять участие в научном исследовании, посвященном изучению взаимосвязи между психическими состояниями, эмоциональным интеллектом и процессом принятия решений.</p>
+
+                    <div class="critical-instruction">
+                        <h3>⚠️ ВАЖНАЯ ИНФОРМАЦИЯ:</h3>
+                        <p>1. Исследование состоит из нескольких опросников</p>
+                        <p>2. <strong>Только некоторые разделы имеют ограничение по времени</strong> (они будут четко обозначены)</p>
+                        <p>3. Все остальные разделы <strong>БЕЗ ограничения времени</strong></p>
+                        <p>4. <strong>Общее время заполнения: 20-25 минут</strong></p>
+                        <p>5. Все ответы анонимны и конфиденциальны</p>
+                    </div>
+
+                    <p>Участие добровольное. Вы можете прекратить заполнение в любой момент.</p>
+
+                    <div style="text-align: center; margin-top: 30px;">
+                        <p>Нажмите "Далее", чтобы продолжить</p>
+                    </div>
+                </div>`
+            ],
+            show_clickable_nav: true,
+            button_label_next: 'Далее',
+            button_label_previous: 'Назад',
+            data: { section: 'welcome' }
+        });
+
+        // ========================
+        // 2. ВЫБОР ЯЗЫКА
+        // ========================
+        timeline.push({
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+                <div class="section-title">Выберите язык / Choose your language</div>
+                <div class="instructions">
+                    <p>Пожалуйста, выберите язык интерфейса:</p>
+                    <p>Please select your preferred interface language:</p>
+                </div>`,
+            choices: ['Русский', 'English'],
+            data: { section: 'language_selection' },
+            on_finish: function(data) {
+                currentLanguage = data.response === 0 ? 'russian' : 'english';
+                jsPsych.data.addProperties({ language: currentLanguage });
+            }
+        });
+
+        // ========================
+        // 3. ДЕМОГРАФИЧЕСКИЕ ДАННЫЕ
+        // ========================
+        timeline.push({
+            type: jsPsychSurveyText,
+            preamble: currentLanguage === 'russian' ?
+                `<div class="section-title">Демографическая информация</div>
+                 <div class="demographic-box">
+                    <p>Пожалуйста, предоставьте следующую информацию о себе.</p>
+                    <p class="untimed-note">✅ Этот раздел БЕЗ ограничения времени</p>
+                 </div>` :
+                `<div class="section-title">Demographic Information</div>
+                 <div class="demographic-box">
+                    <p>Please provide the following information about yourself.</p>
+                    <p class="untimed-note">✅ This section is UNTIMED</p>
+                 </div>`,
+            questions: [
+                {
+                    prompt: currentLanguage === 'russian' ?
+                        'Ваш пол:' :
+                        'Your gender:',
+                    name: 'gender',
+                    required: true,
+                    placeholder: currentLanguage === 'russian' ? 'Мужской/Женский' : 'Male/Female'
+                },
+                {
+                    prompt: currentLanguage === 'russian' ?
+                        'Ваша возрастная группа:' :
+                        'Your age group:',
+                    name: 'age_group',
+                    required: true,
+                    placeholder: currentLanguage === 'russian' ? '18-24, 25-34, 35-44, 45-54, 55+' : '18-24, 25-34, 35-44, 45-54, 55+'
+                }
+            ],
+            data: { section: 'demographics' }
+        });
+
+        // ========================
+        // 4. СЛУЧАЙНОЕ ЧИСЛО ОТ 1 ДО 12
+        // ========================
+        timeline.push({
+            type: jsPsychSurveyText,
+            preamble: currentLanguage === 'russian' ?
+                `<div class="critical-instruction">
+                    <h3>Выбор направления опроса</h3>
+                    <p>Выберите случайное число от 1 до 12.</p>
+                    <p>Это число определит, в какую группу вы попадете:</p>
+<!--                    <ul style="font-size: 14px; text-align: left;">-->
+<!--                        <li>1 → Секция 6 (Потеря + низкий уровень)</li>-->
+<!--                        <li>2 → Секция 5 (Усиление + Высокое)</li>-->
+<!--                        <li>3 → Секция 7 (Потеря + Высокий)</li>-->
+<!--                        <li>4 → Секция 7 (Потеря + Высокий)</li>-->
+<!--                        <li>5 → Секция 5 (Усиление + Высокое)</li>-->
+<!--                        <li>6 → Секция 6 (Потеря + Низкий)</li>-->
+<!--                        <li>7 → Секция 5 (Усиление + Низкий)</li>-->
+<!--                        <li>8 → Секция 7 (Потеря + Высокий)</li>-->
+<!--                        <li>9 → Секция 6 (Потеря + Низкий)</li>-->
+<!--                        <li>10 → Секция 4 (Усиление + Низкий)</li>-->
+<!--                        <li>11 → Секция 4 (Усиление + Низкий)</li>-->
+<!--                        <li>12 → Секция 5 (Усиление + Высокое)</li>-->
+<!--                    </ul>-->
+                </div>` :
+                `<div class="critical-instruction">
+                    <h3>Survey Direction Selection</h3>
+                    <p>Choose a random number from 1 to 12.</p>
+                    <p>This number will determine which group you will be in:</p>
+<!--                    <ul style="font-size: 14px; text-align: left;">-->
+<!--                        <li>1 → Section 6 (Loss + Low level)</li>-->
+<!--                        <li>2 → Section 5 (Gain + High)</li>-->
+<!--                        <li>3 → Section 7 (Loss + High)</li>-->
+<!--                        <li>4 → Section 7 (Loss + High)</li>-->
+<!--                        <li>5 → Section 5 (Gain + High)</li>-->
+<!--                        <li>6 → Section 6 (Loss + Low)</li>-->
+<!--                        <li>7 → Section 5 (Gain + Low)</li>-->
+<!--                        <li>8 → Section 7 (Loss + High)</li>-->
+<!--                        <li>9 → Section 6 (Loss + Low)</li>-->
+<!--                        <li>10 → Section 4 (Gain + Low)</li>-->
+<!--                        <li>11 → Section 4 (Gain + Low)</li>-->
+<!--                        <li>12 → Section 5 (Gain + High)</li>-->
+<!--                    </ul>-->
+                </div>`,
+            questions: [
+                {
+                    prompt: currentLanguage === 'russian' ?
+                        'Выберите случайное число от 1 до 12:' :
+                        'Choose a random number from 1 to 12:',
+                    name: 'random_number',
+                    required: true,
+                    placeholder: '1-12'
+                }
+            ],
+            data: { section: 'random_number_selection' },
+            on_finish: function(data) {
+                randomNumber = data.response.random_number;
+                experimentGroup = determineGroup(randomNumber);
+                jsPsych.data.addProperties({
+                    random_number: randomNumber,
+                    experiment_group: experimentGroup
+                });
+            }
+        });
+
+        // ========================
+        // 5. РЕШЕНИЕ В ЗАВИСИМОСТИ ОТ ГРУППЫ
+        // ========================
+        timeline.push({
+            type: jsPsychSurveyMultiChoice,
+            preamble: function() {
+                // Создаем преамбулу в зависимости от группы
+                if (experimentGroup && experimentGroup.includes('low')) {
+                    return `<div id="decision-timer" class="timer-display">10</div>
+                           <div class="timed-warning">
+                               ⏱️ ⚠️ ${currentLanguage === 'russian' ? 'ЭТОТ РАЗДЕЛ С ОГРАНИЧЕНИЕМ ВРЕМЕНИ' : 'THIS SECTION IS TIMED'} ⚠️ ⏱️<br>
+                               ${currentLanguage === 'russian' ?
+                                   'Пожалуйста, примите решение быстро, ориентируясь на интуицию.' :
+                                   'Please make a decision quickly, following your intuition.'}
+                           </div>`;
+                } else {
+                    return `<div class="untimed-note">
+                        ${currentLanguage === 'russian' ?
+                            'После прочтения этого текста переходите к следующему разделу — не резюмируйте его содержание: ваше понимание будет оцениваться косвенно через последующие ответы.' :
+                            'After reading this text, proceed to the next section — do not summarize its content: your understanding will be assessed indirectly through subsequent responses.'}
+                    </div>`;
+                }
+            },
+            questions: function() {
+                // Определяем вопрос в зависимости от группы
+                let questionText = '';
+                let options = [];
+
+                if (experimentGroup && experimentGroup.includes('gain')) {
+                    // Усиление (gain) - 200 выживут
+                    questionText = currentLanguage === 'russian' ?
+                        'Представьте, что некоторая болезнь убьет 600 человек. Вы можете реализовать 1 из 2 программ. Какую вы выберете?' :
+                        'Imagine that some disease will kill 600 people. You can implement 1 of 2 programs. Which one will you choose?';
+                    options = currentLanguage === 'russian' ?
+                        ['Программа А - 200 человек выживут', 'Программа Б - с шансом 1/3 все выживут, с шансом 2/3 все умрут'] :
+                        ['Program A - 200 people will survive', 'Program B - with 1/3 chance everyone survives, with 2/3 chance everyone dies'];
+                } else {
+                    // Потеря (loss) - 400 умрут
+                    questionText = currentLanguage === 'russian' ?
+                        'Представьте, что некоторая болезнь убьет 600 человек. Вы можете реализовать 1 из 2 программ. Какую вы выберете?' :
+                        'Imagine that some disease will kill 600 people. You can implement 1 of 2 programs. Which one will you choose?';
+                    options = currentLanguage === 'russian' ?
+                        ['Программа А - 400 человек умрут', 'Программа Б - с шансом 1/3 все выживут, с шансом 2/3 все умрут'] :
+                        ['Program A - 400 people will die', 'Program B - with 1/3 chance everyone survives, with 2/3 chance everyone dies'];
+                }
+
+                return [{
+                    prompt: questionText,
+                    name: 'decision',
+                    options: options,
+                    required: !(experimentGroup && experimentGroup.includes('low'))
+                }];
+            },
+            trial_duration: function() {
+                // Устанавливаем время только для групп с низким уровнем
+                return experimentGroup && experimentGroup.includes('low') ? 10000 : null;
+            },
+            on_load: function() {
+                // Запускаем таймер для групп с низким уровнем
+                if (experimentGroup && experimentGroup.includes('low')) {
+                    let timeLeft = 10;
+                    const timerElement = document.getElementById('decision-timer');
+                    if (timerElement) {
+                        const updateTimer = setInterval(() => {
+                            timeLeft--;
+                            timerElement.textContent = timeLeft;
+                            if (timeLeft <= 3) {
+                                timerElement.style.color = '#ff0000';
+                                timerElement.style.backgroundColor = '#ffcccc';
+                            }
+                            if (timeLeft <= 0) {
+                                clearInterval(updateTimer);
+                            }
+                        }, 1000);
+                    }
+                }
+            },
+            on_finish: function(data) {
+                // Записываем время ответа для групп с низким уровнем
+                if (experimentGroup && experimentGroup.includes('low')) {
+                    data.response_time = jsPsych.getTotalTime() - data.time_elapsed;
+                    data.timed_out = (data.response_time >= 10000);
+                }
+                data.section = 'decision_scenario';
+                data.group = experimentGroup;
+            }
+        });
+
+        // ========================
+        // 6. МЕЛЬБУРНСКИЙ ОПРОСНИК ПРИНЯТИЯ РЕШЕНИЙ (MDMQ) - 21 ВОПРОС
+        // ========================
+        timeline.push({
+            type: jsPsychInstructions,
+            pages: currentLanguage === 'russian' ? [
+                `<div class="section-title">Мельбурнский опросник принятия решений (MDMQ)</div>
+                <div class="instructions">
+                    <p>Люди отличаются по тому, как они принимают решения.</p>
+                    <p>Пожалуйста, укажите, как именно вы принимаете решения – для каждого вопроса выберите ответ, наиболее соответствующий вашему обычному стилю принятия решений.</p>
+                    <p class="untimed-note">✅ Этот раздел БЕЗ ограничения времени</p>
+                </div>`
+            ] : [
+                `<div class="section-title">Melbourne Decision Making Questionnaire (MDMQ)</div>
+                <div class="instructions">
+                    <p>People differ in how they make decisions.</p>
+                    <p>Please indicate how exactly you make decisions - for each question, choose the answer that best corresponds to your usual decision-making style.</p>
+                    <p class="untimed-note">✅ This section is UNTIMED</p>
+                </div>`
+            ],
+            show_clickable_nav: true,
+            button_label_next: currentLanguage === 'russian' ? 'Начать опросник' : 'Start Questionnaire'
+        });
+
+        const mdqmQuestions = [
+            "Когда я принимаю решение, у меня возникает ощущение, как будто мне безумно не хватает времени.",
+            "Когда я принимаю решение, я предпочитаю рассмотреть все альтернативы.",
+            "Я предпочитаю оставлять принятие решений другим людям.",
+            "Когда я принимаю решение, я пытаюсь найти недостатки всех альтернатив.",
+            "Я продумываю лучший способ исполнения решения.",
+            "Даже после принятия решения я откладываю на потом его выполнение.",
+            "При принятии решений я предпочитаю собирать большое количество информации.",
+            "Я избегаю принимать решения.",
+            "Когда мне нужно принять решение, я жду долгое время, перед тем как начать об этом думать.",
+            "Мне не нравится брать на себя ответственность за принятие решений.",
+            "Я стараюсь четкое представление о своих целях, перед тем как сделать выбор.",
+            "Возможность того, что какая-то мелочь пойдет «не по плану», вынуждает меня резко изменить решение.",
+            "Если решение может быть принято мной или другим человеком, я дам другому человеку это сделать.",
+            "Когда я сталкиваюсь с трудной проблемой, я обычно пессимистичен относительно возможности найти хорошее решение.",
+            "Я тщательно всё обдумываю, перед тем как сделать выбор.",
+            "Я не принимаю решений, пока в этом нет острой необходимости.",
+            "Я отсрочиваю принятие решения до последнего момента.",
+            "Я предпочитаю, чтобы решения принимались теми, кто большей степени информирован, чем я.",
+            "После того, как я принял решение, я трачу много времени убеждая себя, что оно было правильным.",
+            "Я откладываю принятие решений.",
+            "Я не могу мыслить трезво, если мне нужно принять решение в спешке."
+        ];
+
+        timeline.push({
+            type: jsPsychSurveyLikert,
+            preamble: currentLanguage === 'russian' ?
+                '<p>Выберите наиболее подходящий вариант:</p>' :
+                '<p>Choose the most appropriate option:</p>',
+            questions: mdqmQuestions.map((question, index) => ({
+                prompt: question,
+                name: `MDMQ_${index + 1}`,
+                labels: currentLanguage === 'russian' ?
+                    ['Неверно для меня', 'Иногда верно', 'Верно для меня'] :
+                    ['Not true for me', 'Sometimes true', 'True for me'],
+                required: true
+            })),
+            randomize_question_order: false,
+            data: { section: 'MDMQ' }
+        });
+
+        // ========================
+        // 7. САМОЧУВСТВИЕ, АКТИВНОСТЬ, НАСТРОЕНИЕ (САН) - 29 ПАР
+        // ========================
+        timeline.push({
+            type: jsPsychInstructions,
+            pages: currentLanguage === 'russian' ? [
+                `<div class="section-title">САМОЧУВСТВИЕ, АКТИВНОСТЬ, НАСТРОЕНИЕ (САН)</div>
+                <div class="instructions">
+                    <div class="scale-description">
+                        <p>Соотнесите свое состояние с рядом характеристик по многоступенчатой шкале.</p>
+                        <p>Шкала состоит из индексов (3 2 1 0 1 2 3) и расположена между тридцатью парами слов противоположного значения.</p>
+                        <p>Выберите и отметьте число, которое наиболее точно отражает ваше состояние на момент оценки.</p>
+                        <ul>
+                            <li>Верхняя «3» означает, что участник максимально близок к верхнему дескриптору</li>
+                            <li>«3» внизу означает максимальную близость к нижнему дескриптору</li>
+                            <li>«0» означает нейтральное или промежуточное состояние</li>
+                        </ul>
+                        <p class="untimed-note">✅ Этот раздел БЕЗ ограничения времени</p>
+                    </div>
+                </div>`
+            ] : [
+                `<div class="section-title">WELL-BEING, ACTIVITY, MOOD (WAM)</div>
+                <div class="instructions">
+                    <div class="scale-description">
+                        <p>Relate your condition to a series of characteristics on a multi-step scale.</p>
+                        <p>The scale consists of indices (3 2 1 0 1 2 3) and is located between thirty pairs of words of opposite meaning.</p>
+                        <p>Select and mark the number that most accurately reflects your condition at the time of assessment.</p>
+                        <ul>
+                            <li>Top "3" means the participant is as close as possible to the top descriptor</li>
+                            <li>Bottom "3" means maximum closeness to the bottom descriptor</li>
+                            <li>"0" means a neutral or intermediate state</li>
+                        </ul>
+                        <p class="untimed-note">✅ This section is UNTIMED</p>
+                    </div>
+                </div>`
+            ],
+            show_clickable_nav: true,
+            button_label_next: currentLanguage === 'russian' ? 'Начать' : 'Start'
+        });
+
+        const sanPairs = [
+            { left: "Самочувствие хорошее", right: "Самочувствие плохое" },
+            { left: "Чувствую себя сильным", right: "Чувствую себя слабым" },
+            { left: "Пассивный", right: "Активный" },
+            { left: "Малоподвижный", right: "Подвижный" },
+            { left: "Весёлый", right: "Грустный" },
+            { left: "Хорошее настроение", right: "Плохое настроение" },
+            { left: "Работоспособный", right: "Разбитый" },
+            { left: "Полный сил", right: "Обессиленный" },
+            { left: "Медлительный", right: "Быстрый" },
+            { left: "Бездеятельный", right: "Деятельный" },
+            { left: "Счастливый", right: "Несчастный" },
+            { left: "Жизнерадостный", right: "Мрачный" },
+            { left: "Напряжённый", right: "Расслабленный" },
+            { left: "Здоровый", right: "Больной" },
+            { left: "Безучастный", right: "Увлечённый" },
+            { left: "Равнодушный", right: "Взволнованный" },
+            { left: "Восторженный", right: "Унылый" },
+            { left: "Радостный", right: "Печальный" },
+            { left: "Отдохнувший", right: "Усталый" },
+            { left: "Свежий", right: "Изнурённый" },
+            { left: "Сонливый", right: "Возбуждённый" },
+            { left: "Желание отдохнуть", right: "Желание работать" },
+            { left: "Спокойный", right: "Озабоченный" },
+            { left: "Оптимистичный", right: "Пессимистичный" },
+            { left: "Выносливый", right: "Утомляемый" },
+            { left: "Бодрый", right: "Вялый" },
+            { left: "Соображать трудно", right: "Соображать легко" },
+            { left: "Рассеянный", right: "Внимательный" },
+            { left: "Довольный", right: "Недовольный" }
+        ];
+
+        // Создаем отдельные вопросы для каждой пары САН
+        sanPairs.forEach((pair, index) => {
+            timeline.push({
+                type: jsPsychSurveyLikert,
+                preamble: `<div style="text-align: center; font-size: 20px; margin-bottom: 20px;">
+                          <div style="color: #4a6fa5; font-weight: bold;">${pair.left}</div>
+                          <div style="margin: 10px 0;">← ПРОТИВОПОЛОЖНО →</div>
+                          <div style="color: #d32f2f; font-weight: bold;">${pair.right}</div>
+                          </div>`,
+                questions: [{
+                    prompt: currentLanguage === 'russian' ?
+                        'Выберите число, которое наиболее точно отражает ваше состояние:' :
+                        'Choose the number that most accurately reflects your condition:',
+                    name: `SAN_${index + 1}`,
+                    labels: ['3', '2', '1', '0', '1', '2', '3'],
+                    required: true
+                }],
+                data: {
+                    section: 'SAN',
+                    item: index + 1,
+                    left_descriptor: pair.left,
+                    right_descriptor: pair.right
+                }
+            });
+        });
+
+        // ========================
+        // 8. ШКАЛА ЭМОЦИОНАЛЬНОГО ИНТЕЛЛЕКТА ВОНГ-ЛО (WLEIS) - 16 ВОПРОСОВ
+        // ========================
+        timeline.push({
+            type: jsPsychInstructions,
+            pages: currentLanguage === 'russian' ? [
+                `<div class="section-title">Шкала эмоционального интеллекта Вонг-Ло (WLEIS)</div>
+                <div class="instructions">
+                    <div class="scale-description">
+                        <p>Пожалуйста, укажите степень вашего согласия с каждым утверждением по следующей шкале:</p>
+                        <div class="response-grid">
+                            <div class="response-label">1 - Полностью не согласен</div>
+                            <div class="response-label">2 - Не согласен</div>
+                            <div class="response-label">3 - Немного не согласен</div>
+                            <div class="response-label">4 - Ни согласен, ни не согласен</div>
+                            <div class="response-label">5 - Немного согласен</div>
+                            <div class="response-label">6 - Согласен</div>
+                            <div class="response-label">7 - Полностью согласен</div>
+                        </div>
+                    </div>
+                    <p class="untimed-note">✅ Этот раздел БЕЗ ограничения времени</p>
+                </div>`
+            ] : [
+                `<div class="section-title">Wong-Lo Emotional Intelligence Scale (WLEIS)</div>
+                <div class="instructions">
+                    <div class="scale-description">
+                        <p>Please indicate the degree of your agreement with each statement on the following scale:</p>
+                        <div class="response-grid">
+                            <div class="response-label">1 - Strongly disagree</div>
+                            <div class="response-label">2 - Disagree</div>
+                            <div class="response-label">3 - Slightly disagree</div>
+                            <div class="response-label">4 - Neither agree nor disagree</div>
+                            <div class="response-label">5 - Slightly agree</div>
+                            <div class="response-label">6 - Agree</div>
+                            <div class="response-label">7 - Strongly agree</div>
+                        </div>
+                    </div>
+                    <p class="untimed-note">✅ This section is UNTIMED</p>
+                </div>`
+            ],
+            show_clickable_nav: true,
+            button_label_next: currentLanguage === 'russian' ? 'Начать' : 'Start'
+        });
+
+        const wleisQuestions = [
+            "Я хорошо понимаю, почему у меня в большинстве случаев возникают определенные чувства.",
+            "Я хорошо понимаю свои эмоции.",
+            "Я действительно понимаю, что я чувствую.",
+            "Я всегда знаю, счастлив я или нет.",
+            "Я всегда понимаю эмоции своих друзей по их поведению.",
+            "Я хорошо наблюдаю за эмоциями других людей.",
+            "Я чувствителен к чувствам и эмоциям других людей.",
+            "Я хорошо понимаю эмоции окружающих меня людей.",
+            "Я всегда ставлю перед собой цели, а затем стараюсь изо всех сил их достичь.",
+            "Я всегда говорю себе, что я компетентный человек.",
+            "Я человек с высокой самомотивацией.",
+            "Я всегда буду подбадривать себя, чтобы стараться изо всех сил.",
+            "Я умею контролировать свой характер и рационально справляться с трудностями.",
+            "Я вполне способен контролировать свои эмоции.",
+            "Я всегда могу быстро успокоиться, когда очень злюсь.",
+            "Я хорошо контролирую свои эмоции."
+        ];
+
+        timeline.push({
+            type: jsPsychSurveyLikert,
+            questions: wleisQuestions.map((question, index) => ({
+                prompt: question,
+                name: `WLEIS_${index + 1}`,
+                labels: ['1', '2', '3', '4', '5', '6', '7'],
+                required: true
+            })),
+            randomize_question_order: false,
+            data: { section: 'WLEIS' }
+        });
+
+        // ========================
+        // 9. КОГНИТИВНЫЙ РЕФЛЕКСИВНЫЙ ТЕСТ (CRT) - 7 ВОПРОСОВ С ТАЙМИНГОМ 40 СЕКУНД
+        // ========================
+        timeline.push({
+            type: jsPsychInstructions,
+            pages: currentLanguage === 'russian' ? [
+                `<div class="section-title">Когнитивный рефлексивный тест</div>
+                <div class="instructions">
+                    <div class="timed-warning">⏱️ ⚠️ ЭТОТ РАЗДЕЛ С ОГРАНИЧЕНИЕМ ВРЕМЕНИ ⚠️ ⏱️</div>
+                    <p>Напишите свой ответ в максимально краткой форме.</p>
+                    <p>На каждый вопрос у вас есть <strong>40 секунд</strong>.</p>
+                    <p>Таймер запустится автоматически при появлении вопроса.</p>
+                    <p>Ответ на вопрос может быть строкой, цифрой или словом.</p>
+                </div>`
+            ] : [
+                `<div class="section-title">Cognitive Reflection Test</div>
+                <div class="instructions">
+                    <div class="timed-warning">⏱️ ⚠️ THIS SECTION IS TIMED ⚠️ ⏱️</div>
+                    <p>Write your answer in the most concise form.</p>
+                    <p>You have <strong>40 seconds</strong> for each question.</p>
+                    <p>The timer will start automatically when the question appears.</p>
+                    <p>The answer to the question can be a string, number, or word.</p>
+                </div>`
+            ],
+            show_clickable_nav: true,
+            button_label_next: currentLanguage === 'russian' ? 'Начать тест' : 'Start Test'
+        });
+
+        const crtQuestions = [
+            "Бита и мяч стоят в общей сложности $1.10. Бита стоит на $1 больше, чем мяч. Сколько стоит мяч?",
+            "Если 5 машин за 5 минут производят 5 виджетов, сколько времени потребуется 100 машинам, чтобы произвести 100 виджетов?",
+            "Листья кувшинок удваиваются ежедневно; если требуется 48 дней, чтобы покрыть весь пруд, сколько дней потребуется, чтобы покрыть половину пруда?",
+            "Если вы обгоняете человека, занимающего второе место, какое место вы теперь занимаете?",
+            "У отца Эмили три дочери. Первых двух зовут Понедельник и Вторник. Как зовут третью дочь?",
+            "Сколько месяцев в году имеют 28 дней?",
+            "У фермера было 15 овец, и все, кроме 8, погибли. Сколько осталось?"
+        ];
+
+        crtQuestions.forEach((question, index) => {
+            timeline.push({
+                type: jsPsychSurveyText,
+                preamble: `<div id="crt-timer-${index}" class="timer-display">40</div>`,
+                questions: [{
+                    prompt: `<div style="font-size: 20px; padding: 20px; background-color: #f0f7ff; border-radius: 10px;">
+                            <strong>${currentLanguage === 'russian' ? 'Вопрос' : 'Question'} ${index + 1} ${currentLanguage === 'russian' ? 'из' : 'of'} 7:</strong><br><br>
+                            ${question}
+                            </div>`,
+                    name: `CRT_${index + 1}`,
+                    placeholder: currentLanguage === 'russian' ? 'Введите ответ...' : 'Enter answer...',
+                    required: false
+                }],
+                trial_duration: 40000,
+                on_load: function() {
+                    let timeLeft = 40;
+                    const timerElement = document.getElementById(`crt-timer-${index}`);
+                    if (timerElement) {
+                        const updateTimer = setInterval(() => {
+                            timeLeft--;
+                            timerElement.textContent = timeLeft;
+                            if (timeLeft <= 10) {
+                                timerElement.style.color = '#ff0000';
+                                timerElement.style.backgroundColor = '#ffcccc';
+                            }
+                            if (timeLeft <= 0) {
+                                clearInterval(updateTimer);
+                            }
+                        }, 1000);
+                    }
+                },
+                on_finish: function(data) {
+                    data.section = 'CRT';
+                    data.item_number = index + 1;
+                    data.timed = true;
+
+                    // Удаляем таймер
+                    const timerElement = document.getElementById(`crt-timer-${index}`);
+                    if (timerElement) timerElement.remove();
+                }
+            });
+        });
+
+        // ========================
+        // 10. ОПРОСНИК РЕФЛЕКСИВНОСТИ КАРПОВА - 27 ВОПРОСОВ
+        // ========================
+        timeline.push({
+            type: jsPsychInstructions,
+            pages: currentLanguage === 'russian' ? [
+                `<div class="section-title">Опросник рефлексивности Карпова</div>
+                <div class="instructions">
+                    <div class="scale-description">
+                        <p>Вам предстоит дать ответы на несколько утверждений опросника.</p>
+                        <p>Выберите цифру, соответствующую варианту Вашего ответа:</p>
+                        <div class="response-grid">
+                            <div class="response-label">1 – абсолютно неверно</div>
+                            <div class="response-label">2 – неверно</div>
+                            <div class="response-label">3 – скорее неверно</div>
+                            <div class="response-label">4 – не знаю</div>
+                            <div class="response-label">5 – скорее верно</div>
+                            <div class="response-label">6 – верно</div>
+                            <div class="response-label">7 – совершенно верно</div>
+                        </div>
+                    </div>
+                    <p class="untimed-note">✅ Этот раздел БЕЗ ограничения времени</p>
+                </div>`
+            ] : [
+                `<div class="section-title">Karpov Reflexivity Questionnaire</div>
+                <div class="instructions">
+                    <div class="scale-description">
+                        <p>You will need to give answers to several statements of the questionnaire.</p>
+                        <p>Select the number corresponding to your answer option:</p>
+                        <div class="response-grid">
+                            <div class="response-label">1 – absolutely false</div>
+                            <div class="response-label">2 – false</div>
+                            <div class="response-label">3 – rather false</div>
+                            <div class="response-label">4 – don't know</div>
+                            <div class="response-label">5 – rather true</div>
+                            <div class="response-label">6 – true</div>
+                            <div class="response-label">7 – absolutely true</div>
+                        </div>
+                    </div>
+                    <p class="untimed-note">✅ This section is UNTIMED</p>
+                </div>`
+            ],
+            show_clickable_nav: true,
+            button_label_next: currentLanguage === 'russian' ? 'Начать' : 'Start'
+        });
+
+        const karpovQuestions = [
+            "Прочитав хорошую книгу, я всегда потом долго думаю о ней; хочется ее с кем-нибудь обсудить.",
+            "Когда меня вдруг неожиданно о чем-то спросят, я могу ответить первое, что пришло в голову.",
+            "Прежде чем снять трубку телефона, чтобы позвонить по делу, я обычно мысленно планирую предстоящий разговор.",
+            "Совершив какой-то промах, я долго потом не могу отвлечься от мыслей о нем.",
+            "Когда я размышляю над чем-то или беседую с другим человеком, мне бывает интересно вдруг вспомнить, что послужило началом цепочки мыслей.",
+            "Приступая к трудному заданию, я стараюсь не думать о предстоящих трудностях.",
+            "Главное для меня – представить конечную цель своей деятельности, а детали имеют второстепенное значение.",
+            "Бывает, что я не могу понять, почему кто-либо недоволен мною.",
+            "Для меня важно в деталях представлять себе ход предстоящей работы.",
+            "Мне было бы трудно написать серьезное письмо, если бы я заранее не составил план.",
+            "Я предпочитаю действовать, а не размышлять над причинами своих неудач.",
+            "Я довольно легко принимаю решение относительно дорогой покупки.",
+            "Как правило, что-то задумав, я прокручиваю в голове свои замыслы, уточняя детали, рассматривая все варианты.",
+            "Я беспокоюсь о своем будущем.",
+            "Думаю, что во множестве ситуаций надо действовать быстро, руководствуясь первой пришедшей в голову мыслью.",
+            "Порой я принимаю необдуманные решения.",
+            "Закончив разговор, я, бывает, продолжаю вести его мысленно, приводя все новые и новые аргументы в защиту своей точки зрения.",
+            "Если происходит конфликт, то, размышляя над тем, кто в нем виноват, я в первую очередь начинаю с себя.",
+            "Прежде чем принять решение, я всегда стараюсь все тщательно обдумать и взвесить.",
+            "У меня бывают конфликты от того, что я порой не могу предугадать, какого поведения ожидают от меня окружающие.",
+            "Бывает, что, обдумывая разговор с другим человеком, я как бы мысленно веду с ним диалог.",
+            "Я стараюсь не задумываться над тем, какие мысли и чувства вызывают в других людях мои слова и поступки.",
+            "Прежде чем сделать замечание другому человеку, я обязательно подумаю, в каких словах это лучше сделать, чтобы его не обидеть.",
+            "Решая трудную задачу, я думаю над ней даже тогда, когда занимаюсь другими делами.",
+            "Если я с кем-то ссорюсь, то в большинстве случаев не считаю себя виноватым.",
+            "Редко бывает так, что я жалею о сказанном.",
+            "Я часто анализирую свои поступки и их последствия."
+        ];
+
+        timeline.push({
+            type: jsPsychSurveyLikert,
+            questions: karpovQuestions.map((question, index) => ({
+                prompt: question,
+                name: `KARPOV_${index + 1}`,
+                labels: ['1', '2', '3', '4', '5', '6', '7'],
+                required: true
+            })),
+            randomize_question_order: false,
+            data: { section: 'KARPOV' }
+        });
+
+        // ========================
+        // 11. ШКАЛА ОБЛЕГЧЕНИЯ ПРОХОРОВА - 13 ПАР
+        // ========================
+        timeline.push({
+            type: jsPsychInstructions,
+            pages: currentLanguage === 'russian' ? [
+                `<div class="section-title">Шкала облегчения Прохорова</div>
+                <div class="instructions">
+                    <div class="scale-description">
+                        <p>Представьте, что Вы находитесь в ситуации, где от вас требуется высокое УМСТВЕННОЕ НАПРЯЖЕНИЕ (экзамен или решение какой-то важной задачи).</p>
+                        <p>Выберите цифру, которая, на Ваш взгляд, отражает уровень проявления данной характеристики состояния:</p>
+                        <ul>
+                            <li>5 – максимальная выраженность данного показателя</li>
+                            <li>4 – уровень выше среднего</li>
+                            <li>3 – средний</li>
+                            <li>2 – ниже среднего</li>
+                            <li>1 – низкий уровень</li>
+                            <li>0 – обычная, неизмененная характеристика данного показателя</li>
+                        </ul>
+                        <p>Слева в строке опросника один полюс, а справа – противоположный полюс данного показателя.</p>
+                        <p class="untimed-note">✅ Этот раздел БЕЗ ограничения времени</p>
+                    </div>
+                </div>`
+            ] : [
+                `<div class="section-title">Prokhorov Relief Scale</div>
+                <div class="instructions">
+                    <div class="scale-description">
+                        <p>Imagine that you are in a situation that requires high MENTAL STRESS (exam or solving some important task).</p>
+                        <p>Select the number that, in your opinion, reflects the level of manifestation of this characteristic of the state:</p>
+                        <ul>
+                            <li>5 – maximum severity of this indicator</li>
+                            <li>4 – above average level</li>
+                            <li>3 – average</li>
+                            <li>2 – below average</li>
+                            <li>1 – low level</li>
+                            <li>0 – usual, unchanged characteristic of this indicator</li>
+                        </ul>
+                        <p>On the left in the questionnaire line is one pole, and on the right is the opposite pole of this indicator.</p>
+                        <p class="untimed-note">✅ This section is UNTIMED</p>
+                    </div>
+                </div>`
+            ],
+            show_clickable_nav: true,
+            button_label_next: currentLanguage === 'russian' ? 'Начать' : 'Start'
+        });
+
+        const prokhorovPairs = [
+            { left: "Ухудшение восприимчивости к внешним воздействиям, невосприимчивость", right: "Обострение чувствительности к внешним воздействиям" },
+            { left: "Ухудшение, размытость, нечеткость, плохая осознанность", right: "Хорошая осознанность восприятия, ясность" },
+            { left: "Трудность возникновения образов", right: "Четкость, ясность представлений, легкость возникновения образов" },
+            { left: "Ухудшение памяти, трудность запоминания и воспроизведения", right: "Улучшение памяти, легкость запоминания, легко вспоминается то, что необходимо вспомнить в данный момент" },
+            { left: "Трудность в понимании, ухудшение сообразительности, отсутствие логики мысли", right: "Повышение сообразительности, высокая находчивость, логичности" },
+            { left: "Трудность что-то придумать, косность, «зажатость»", right: "Легкость образования новых ассоциаций, фантазирование, придумывание, раскованность" },
+            { left: "Ухудшение речи (появление длительных пауз, запинок, увеличение количества лишних слов, слишком тихая речь, заикание и др.)", right: "Повышение речевой активности, увеличение громкости голоса, ускорение речи без улучшения качества грамотности, логичности" },
+            { left: "Чувство страха, паники, отчаяния, безысходности", right: "Чувство радости, восторга, веселость. Появление азарта" },
+            { left: "Трудно заставить себя, слабость, чувство неуверенности, лень", right: "Повышение уверенности в себе, легкость в управлении собой. Вера в успех" },
+            { left: "Ухудшение внимания, низкая способность сосредоточиться на выполнении работы, отвлекаемость", right: "Улучшение способности к сосредоточению. Посторонние раздражители не отвлекают. Высокая увлеченность работой" },
+            { left: "Ощущение похолодания конечностей, чувство озноба", right: "Ощущение тепла, повышение температуры тела" },
+            { left: "Значительное мышечное напряжение, дрожание рук, подергивание (тик мышц лица, губ, век)", right: "Умеренное повышение мышечного тонуса. Чувство умеренного мышечного напряжения" },
+            { left: "Снижение четкости движений, нарушение координации, ухудшение почерка, затруднение в выполнении мелких движений, требующих высокой точности", right: "Улучшение координации движений, увеличение скорости, точности, координированности движений во время работы, письма" }
+        ];
+
+        prokhorovPairs.forEach((pair, index) => {
+            timeline.push({
+                type: jsPsychSurveyLikert,
+                preamble: `<div style="text-align: center; font-size: 20px; margin-bottom: 20px;">
+                          <div style="color: #4a6fa5; font-weight: bold;">${pair.left}</div>
+                          <div style="margin: 10px 0;">← ПРОТИВОПОЖНО →</div>
+                          <div style="color: #d32f2f; font-weight: bold;">${pair.right}</div>
+                          </div>`,
+                questions: [{
+                    prompt: currentLanguage === 'russian' ?
+                        'Выберите оценку от -5 до 5:' :
+                        'Choose a rating from -5 to 5:',
+                    name: `PROKHOROV_${index + 1}`,
+                    labels: ['-5', '-4', '-3', '-2', '-1', '0', '1', '2', '3', '4', '5'],
+                    required: true
+                }],
+                data: {
+                    section: 'PROKHOROV',
+                    item: index + 1,
+                    left_descriptor: pair.left,
+                    right_descriptor: pair.right
+                }
+            });
+        });
+
+        // ========================
+        // 12. СПОСОБНОСТЬ САМОУПРАВЛЕНИЯ (ССУ-Н) - 49 ВОПРОСОВ
+        // ========================
+        timeline.push({
+            type: jsPsychInstructions,
+            pages: currentLanguage === 'russian' ? [
+                `<div class="section-title">Способность самоуправления (ССУ-Н) Н.М. Пейсахов</div>
+                <div class="instructions">
+                    <div class="scale-description">
+                        <p>Инструкции по прохождению теста SSU:</p>
+                        <p>Предлагаемый опросник дает возможность узнать о вашей способности контролировать себя в различных ситуациях.</p>
+                        <p>Опросник содержит две группы утверждений: если вы действительно часто оцениваете свои действия и поступки, пытаетесь найти ответ на заданный вопрос, то смело отвечайте «да», а если вы делаете это редко, то отвечайте «нет».</p>
+                        <p class="untimed-note">✅ Этот раздел БЕЗ ограничения времени</p>
+                    </div>
+                </div>`
+            ] : [
+                `<div class="section-title">Self-Management Ability (ССУ-Н) by N.M. Peisakhov</div>
+                <div class="instructions">
+                    <div class="scale-description">
+                        <p>Instructions for taking the SSU test:</p>
+                        <p>The proposed questionnaire makes it possible to learn about your ability to control yourself in various situations.</p>
+                        <p>The questionnaire contains two groups of statements: if you really often evaluate your actions and deeds, try to find an answer to the question asked, then boldly answer "yes", and if you do this rarely, then answer "no".</p>
+                        <p class="untimed-note">✅ This section is UNTIMED</p>
+                    </div>
+                </div>`
+            ],
+            show_clickable_nav: true,
+            button_label_next: currentLanguage === 'russian' ? 'Начать' : 'Start'
+        });
+
+        const ssuQuestions = [
+            "Практика показывает, что я верно определяю свои возможности в любой деятельности.",
+            "Я предусмотрительный человек",
+            "Берусь только за то, что смогу довести до конца",
+            "Обычно хорошо представляю, что нужно сделать, чтобы добиться задуманного",
+            "Постоянно пытаюсь найти ответ на вопрос «Что такое хорошо и что такое плохо?»",
+            "Прежде чем сделать окончательный шаг, я взвешиваю все «за» и «против»",
+            "Всегда отдаю себе отчет в том, что со мной происходит.",
+            "Непредвиденные препятствия не мешают мне довести дело до конца",
+            "У меня не хватает терпения долго разбираться в том, что не решается сразу",
+            "В своих поступках и делах не люблю заглядывать далеко вперед",
+            "Редко задумываюсь о главных целях своей жизни",
+            "Отсутствие продуманных планов не мешает мне добиваться хороших результатов",
+            "Часто затрудняюсь сказать, того ли я достиг, чего хотел",
+            "На выбор моих решений влияют не поставленные цели, а настроение в данный момент",
+            "Мне часто кажется, что целый час или два исчезли неизвестно куда",
+            "Тот, кто считает необходимым исправлять все допущенные промахи, не замечает, как совершает новые",
+            "Когда нужно разбираться в сложной обстановке, чувствую прилив энергии и сил",
+            "Я четко представляю свои жизненные перспективы",
+            "Умею отказываться от всего, что отвлекает меня от цели",
+            "В своих поступках и словах следую пословице: «Семь раз отмерь, один – отрежь»",
+            "Уделяю много времени тому, чтобы понять, с каких позиций надо оценивать свои действия",
+            "В своих действиях я успешно сочетаю риск с осмотрительностью",
+            "Необходимость проверять самого себя стала моей второй натурой",
+            "Когда у меня портятся отношения с людьми, могу их изменить",
+            "Как правило, мне бывает трудно выделить главное в сложившейся ситуации",
+            "Жизнь показывает, что мои прогнозы редко сбываются",
+            "Люди, которые всегда четко знают, чего хотят, представляются мне слишком рациональными",
+            "Удача сопутствует тому, кто не планирует заранее, а полагается на естественный ход событий",
+            "Мне не хватает чувства меры в отношениях с близкими",
+            "Меня угнетает необходимость принимать срочные решения",
+            "Обычно мало слежу за своей речью",
+            "Некоторые свои привычки я охотно бы изменил, если бы знал, как это сделать",
+            "Что я хочу и что должен делать – вот предмет моих постоянных раздумий",
+            "Заранее знаю, каких поступков можно ожидать от людей",
+            "Обычно с самого начала четко представляю будущий результат",
+            "Пока не сложился в голове четкий, конкретный план, не начинаю серьезного разговора",
+            "У меня всегда есть точные ориентиры, по которым я оцениваю свой труд",
+            "Я всегда учитываю последствия принимаемых мной решений",
+            "Внимательно слежу за тем, понимают ли меня во время споров",
+            "Я готов снова и снова заниматься совершенствованием уже законченной работы",
+            "Сколько ни анализирую свои жизненные трудности, не могу достичь полной ясности",
+            "Жизнь так сложна, что считаю, пустой тратой времени предвосхищать ход событий",
+            "Следование однажды поставленной цели очень обедняет жизнь",
+            "Считаю, что планируй, не планируй, а обстоятельства всегда сильнее",
+            "В последнее время ловлю себя на том, что придаю большое значение мелочам, забывая о главном",
+            "Мне обычно не удаётся найти правильное решение из-за большого количества возможных вариантов",
+            "В ссорах не замечаю, как «выхожу из себя»",
+            "Сделав дело, предпочитаю не исправлять даже явные просчёты",
+            "Я часто пересматриваю свои решения и планы."
+        ];
+
+        // Создаем временную шкалу для вопросов ССУ
+        const ssuTimeline = [];
+        ssuQuestions.forEach((question, index) => {
+            ssuTimeline.push({
+                type: jsPsychHtmlButtonResponse,
+                stimulus: `
+                    <div style="text-align: center; padding: 20px;">
+                        <h3>${currentLanguage === 'russian' ?
+                            'Вопрос' : 'Question'} ${index + 1} ${currentLanguage === 'russian' ? 'из' : 'of'} ${ssuQuestions.length}</h3>
+                        <p style="font-size: 20px; margin: 30px 0;">${question}</p>
+                        <p style="color: #666; font-size: 16px;">${currentLanguage === 'russian' ?
+                            'Выберите ответ:' : 'Choose your answer:'}</p>
+                    </div>`,
+                choices: currentLanguage === 'russian' ? ['Да', 'Нет'] : ['Yes', 'No'],
+                data: {
+                    section: 'SSU',
+                    item: index + 1,
+                    question: question
+                }
+            });
+        });
+
+        timeline.push({
+            timeline: ssuTimeline,
+            randomize_order: false
+        });
+
+        // ========================
+        // 13. ОПРОСНИК ОЦЕНКИ СКЛОННОСТИ К РИСКУ (RSK) - 23 ВОПРОСА
+        // ========================
+        timeline.push({
+            type: jsPsychInstructions,
+            pages: currentLanguage === 'russian' ? [
+                `<div class="section-title">Опросник оценки склонности к риску (RSK)</div>
+                <div class="instructions">
+                    <div class="scale-description">
+                        <p>Оцените степень своей готовности совершить действия, о которых вас спрашивают.</p>
+                        <p>Пожалуйста, оцените, насколько каждое утверждение соответствует вашему обычному поведению.</p>
+                        <p>Используйте шкалу от 1 до 5:</p>
+                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 25px 0; text-align: center; font-size: 14px;">
+                            <div style="padding: 8px; background-color: #f1f8e9; border-radius: 5px; font-weight: bold;">1 - Однозначно да</div>
+                            <div style="padding: 8px; background-color: #f1f8e9; border-radius: 5px; font-weight: bold;">2 - Скорее да, чем нет</div>
+                            <div style="padding: 8px; background-color: #f1f8e9; border-radius: 5px; font-weight: bold;">3 - Ни да, ни нет, что-то среднее</div>
+                            <div style="padding: 8px; background-color: #f1f8e9; border-radius: 5px; font-weight: bold;">4 - Скорее нет, чем да</div>
+                            <div style="padding: 8px; background-color: #f1f8e9; border-radius: 5px; font-weight: bold;">5 - Однозначно нет</div>
+                        </div>
+                        <p class="untimed-note">✅ Этот раздел БЕЗ ограничения времени</p>
+                    </div>
+                </div>`
+            ] : [
+                `<div class="section-title">Risk Assessment Questionnaire (RSK)</div>
+                <div class="instructions">
+                    <div class="scale-description">
+                        <p>Assess your willingness to perform the actions you are asked about.</p>
+                        <p>Please evaluate how much each statement corresponds to your usual behavior.</p>
+                        <p>Use a scale from 1 to 5:</p>
+                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 25px 0; text-align: center; font-size: 14px;">
+                            <div style="padding: 8px; background-color: #f1f8e9; border-radius: 5px; font-weight: bold;">1 - Definitely yes</div>
+                            <div style="padding: 8px; background-color: #f1f8e9; border-radius: 5px; font-weight: bold;">2 - Rather yes than no</div>
+                            <div style="padding: 8px; background-color: #f1f8e9; border-radius: 5px; font-weight: bold;">3 - Neither yes nor no, something in between</div>
+                            <div style="padding: 8px; background-color: #f1f8e9; border-radius: 5px; font-weight: bold;">4 - Rather no than yes</div>
+                            <div style="padding: 8px; background-color: #f1f8e9; border-radius: 5px; font-weight: bold;">5 - Definitely no</div>
+                        </div>
+                        <p class="untimed-note">✅ This section is UNTIMED</p>
+                    </div>
+                </div>`
+            ],
+            show_clickable_nav: true,
+            button_label_next: currentLanguage === 'russian' ? 'Начать' : 'Start'
+        });
+
+        const rskQuestions = [
+            "Согласились бы вы ради хорошего заработка участвовать в опасной и длительной экспедиции?",
+            "Стали бы вы на пути убегающего опасного взломщика?",
+            "Могли бы вы ехать на подножке товарного вагона при скорости более 100 км/ч?",
+            "Можете ли вы на другой день после бессонной ночи нормально работать?",
+            "Стали бы вы первым переходить вброд очень холодную реку?",
+            "Одолжили бы вы другу большую сумму денег, будучи не совсем уверенными, что он сможет вам вернуть эти деньги?",
+            "Вошли бы вы вместе с укротителем в клетку со львами, при его заверении, что это безопасно?",
+            "Могли бы вы под руководством извне залезть на высокую фабричную трубу?",
+            "Могли бы вы без тренировки управлять парусной лодкой?",
+            "Рискнули бы вы схватить за уздечку бегущую лошадь?",
+            "Могли бы вы после 10 стаканов пива ехать на велосипеде?",
+            "Могли бы вы совершить прыжок с парашютом?",
+            "Могли бы вы при необходимости проехать без билета от Таллинна до Москвы?",
+            "Могли бы вы совершить автотурне, если бы за рулем сидел ваш знакомый, который совсем недавно был в тяжелом дорожном происшествии?",
+            "Могли бы вы с 10-метровой высоты прыгнуть на тент пожарной команды?",
+            "Могли бы вы, чтобы избавиться от затяжной болезни с постельным режимом, пойти на опасную для жизни операцию?",
+            "Могли бы вы спрыгнуть с подножки товарного вагона, движущегося со скоростью 50 км/ч?",
+            "Могли бы вы, в виде исключения вместе с семью другими людьми, подняться в лифте, рассчитанном только на шесть человек?",
+            "Могли бы вы за большое денежное вознаграждение перейти с завязанными глазами оживленный уличный перекресток?",
+            "Взялись бы вы за опасную для жизни работу, если бы за нее хорошо платили?",
+            "Могли бы вы после 10 рюмок водки вычислять проценты?",
+            "Могли бы вы, по указанию вашего начальника, взяться за высоковольтный провод, если бы он заверил вас, что провод обесточен?",
+            "Могли бы вы после некоторых предварительных объяснений управлять вертолетом?"
+        ];
+
+        timeline.push({
+            type: jsPsychSurveyLikert,
+            questions: rskQuestions.map((question, index) => ({
+                prompt: question,
+                name: `RSK_${index + 1}`,
+                labels: ['1', '2', '3', '4', '5'],
+                required: true
+            })),
+            randomize_question_order: false,
+            data: { section: 'RSK' }
+        });
+
+        // ========================
+        // 14. ЗАВЕРШЕНИЕ ЭКСПЕРИМЕНТА
+        // ========================
+        function showCompletionScreen() {
+          const completionCode = `KFU-${experimentGroup ? experimentGroup.toUpperCase() : 'UNKNOWN'}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+          // Define email address (change this if needed)
+          const researcherEmail = "mnganya2k@gmail.com"; // 👈 Replace with actual email if different
+
+          const completionHTML = currentLanguage === 'russian' ? `
+        <div class="instructions" style="text-align: center; padding: 50px 20px;">
+            <h1 style="color: #2e7d32;">✅ Исследование завершено!</h1>
+            <div style="font-size: 20px; margin: 30px 0;">
+                <p>Большое спасибо за ваше участие и внимательные ответы!</p>
+                <p>Ваши данные сохранены в CSV файл, который автоматически загрузился на ваш компьютер.</p>
+            </div>
+            <div style="background-color: #e8f5e9; padding: 30px; border-radius: 10px; margin: 30px auto; max-width: 600px;">
+                <h3>Код завершения исследования:</h3>
+                <div style="font-size: 36px; font-weight: bold; color: #1b5e20; margin: 20px 0; letter-spacing: 2px;">
+                    ${completionCode}
+                </div>
+                <p>Пожалуйста, сохраните этот код, если вы участвуете через платформу для исследований.</p>
+            </div>
+            <div style="margin-top: 40px; color: #666; text-align: left; display: inline-block;">
+                <p><strong>Вы завершили следующие опросники:</strong></p>
+                <ul>
+                    <li>✓ Демографические данные (2 вопроса)</li>
+                    <li>✓ Случайное число и определение группы (1 вопрос)</li>
+                    <li>✓ Решение в зависимости от группы (1 вопрос${experimentGroup && experimentGroup.includes('low') ? ', 10 секунд' : ''})</li>
+                    <li>✓ Мельбурнский опросник принятия решений (21 вопрос)</li>
+                    <li>✓ Опросник САН (29 пар)</li>
+                    <li>✓ Шкала эмоционального интеллекта Вонг-Ло (16 вопросов)</li>
+                    <li>✓ Когнитивный рефлексивный тест (7 вопросов, 40 сек на каждый)</li>
+                    <li>✓ Опросник рефлексивности Карпова (27 вопросов)</li>
+                    <li>✓ Шкала облегчения Прохорова (13 пар)</li>
+                    <li>✓ Способность самоуправления (49 вопросов)</li>
+                    <li>✓ Опросник оценки склонности к риску (23 вопроса)</li>
+                </ul>
+                <p><strong>Всего: примерно 190 вопросов</strong></p>
+                <p><strong>Ваша группа:</strong> ${experimentGroup || 'не определена'}</p>
+                <p><strong>Случайное число:</strong> ${randomNumber || 'не выбрано'}</p>
+            </div>
+            <!-- NEW EMAIL INSTRUCTION -->
+            <div style="margin-top: 40px; padding: 25px; background-color: #fff3e0; border-radius: 10px; border: 2px solid #ff9800;">
+                <h3 style="color: #e65100;">📤 Важно!</h3>
+                <p>Пожалуйста, отправьте скачанный CSV-файл с вашими результатами на электронную почту исследователя:</p>
+                <p><a href="mailto:${researcherEmail}" style="font-size: 18px; color: #d84315; font-weight: bold;">${researcherEmail}</a></p>
+                <p>Это поможет нам включить ваши данные в анализ. Спасибо!</p>
+            </div>
+            <div style="margin-top: 50px; padding: 20px; background-color: #e3f2fd; border-radius: 8px;">
+                <p><strong>Исследователь:</strong> Нсубуга Мозес</p>
+                <p><strong>Казанский федеральный университет</strong></p>
+                <p>Факультет психологии</p>
+            </div>
+            <p style="margin-top: 40px; font-size: 16px; color: #777;">Вы можете закрыть это окно браузера.</p>
+        </div>
+    ` : `
+        <div class="instructions" style="text-align: center; padding: 50px 20px;">
+            <h1 style="color: #2e7d32;">✅ Study Complete!</h1>
+            <div style="font-size: 20px; margin: 30px 0;">
+                <p>Thank you very much for your participation and careful responses!</p>
+                <p>Your data has been saved to a CSV file, which has been automatically downloaded to your computer.</p>
+            </div>
+            <div style="background-color: #e8f5e9; padding: 30px; border-radius: 10px; margin: 30px auto; max-width: 600px;">
+                <h3>Study Completion Code:</h3>
+                <div style="font-size: 36px; font-weight: bold; color: #1b5e20; margin: 20px 0; letter-spacing: 2px;">
+                    ${completionCode}
+                </div>
+                <p>Please save this code if you are participating through a research platform.</p>
+            </div>
+            <div style="margin-top: 40px; color: #666; text-align: left; display: inline-block;">
+                <p><strong>You have completed the following questionnaires:</strong></p>
+                <ul>
+                    <li>✓ Demographic data (2 questions)</li>
+                    <li>✓ Random number and group determination (1 question)</li>
+                    <li>✓ Decision depending on group (1 question${experimentGroup && experimentGroup.includes('low') ? ', 10 seconds' : ''})</li>
+                    <li>✓ Melbourne Decision Making Questionnaire (21 questions)</li>
+                    <li>✓ Well-being, Activity, Mood questionnaire (29 pairs)</li>
+                    <li>✓ Wong-Lo Emotional Intelligence Scale (16 questions)</li>
+                    <li>✓ Cognitive Reflection Test (7 questions, 40 sec each)</li>
+                    <li>✓ Karpov Reflexivity Questionnaire (27 questions)</li>
+                    <li>✓ Prokhorov Relief Scale (13 pairs)</li>
+                    <li>✓ Self-Management Ability (49 questions)</li>
+                    <li>✓ Risk Assessment Questionnaire (23 questions)</li>
+                </ul>
+                <p><strong>Total: approximately 190 questions</strong></p>
+                <p><strong>Your group:</strong> ${experimentGroup || 'not determined'}</p>
+                <p><strong>Random number:</strong> ${randomNumber || 'not chosen'}</p>
+            </div>
+            <!-- NEW EMAIL INSTRUCTION -->
+            <div style="margin-top: 40px; padding: 25px; background-color: #fff3e0; border-radius: 10px; border: 2px solid #ff9800;">
+                <h3 style="color: #e65100;">📤 Important!</h3>
+                <p>Please send the downloaded CSV file with your results to the researcher's email:</p>
+                <p><a href="mailto:${researcherEmail}" style="font-size: 18px; color: #d84315; font-weight: bold;">${researcherEmail}</a></p>
+                <p>This will help us include your data in the analysis. Thank you!</p>
+            </div>
+            <div style="margin-top: 50px; padding: 20px; background-color: #e3f2fd; border-radius: 8px;">
+                <p><strong>Researcher:</strong> Nsubuga Moses</p>
+                <p><strong>Kazan Federal University</strong></p>
+                <p>Faculty of Psychology</p>
+            </div>
+            <p style="margin-top: 40px; font-size: 16px; color: #777;">You may now close this browser window.</p>
+        </div>
+    `;
+
+          document.getElementById('jspsych-experiment').innerHTML = completionHTML;
+
+          // Save metadata
+          jsPsych.data.addProperties({
+            completion_code: completionCode,
+            completion_time: new Date().toISOString(),
+            total_questions_completed: completedTrials,
+            language_used: currentLanguage,
+            experiment_group: experimentGroup,
+            random_number: randomNumber,
+            researcher: "Нсубуга Мозес / Nsubuga Moses",
+            institution: "Казанский федеральный университет / Kazan Federal University"
+          });
+
+          saveData();
+        }
+
+        // ========================
+        // ЗАПУСК ЭКСПЕРИМЕНТА
+        // ========================
+        jsPsych.run(timeline);
+    </script>
+</body>
+</html>
