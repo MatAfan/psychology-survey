@@ -198,20 +198,29 @@
             return 'gain_low'; // По умолчанию
         }
 
-        // Сохранение данных
-        function saveData() {
-            const data = jsPsych.data.get().json();
-            const csvData = jsPsych.data.get().csv();
+        // URL для отправки данных в Google Sheets
+        const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbwBrzpxB2nd4KuexMohLrlUczm_tnTbn8J7mu86ET7Sh0YItB7HG307LemjCCmPg092/exec";
 
-            // Создание файла для скачивания
-            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `исследование_${Date.now()}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+        // Сохранение данных - отправка на Google Sheets
+        function saveData() {
+            const fullData = {
+                timestamp: new Date().toISOString(),
+                language: currentLanguage,
+                random_number: randomNumber,
+                experiment_group: experimentGroup,
+                jspsych: jsPsych.data.get().filter({}).values()
+            };
+
+            fetch(GOOGLE_SHEETS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(fullData)
+            }).then(function() {
+                console.log("Данные отправлены на Google Sheets");
+            }).catch(function(err) {
+                console.warn("Ошибка отправки на Google Sheets:", err);
+            });
         }
 
         // Инициализация jsPsych
@@ -1175,15 +1184,12 @@
         function showCompletionScreen() {
           const completionCode = `KFU-${experimentGroup ? experimentGroup.toUpperCase() : 'UNKNOWN'}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-          // Define email address (change this if needed)
-          const researcherEmail = "mnganya2k@gmail.com"; // 👈 Replace with actual email if different
-
           const completionHTML = currentLanguage === 'russian' ? `
         <div class="instructions" style="text-align: center; padding: 50px 20px;">
             <h1 style="color: #2e7d32;">✅ Исследование завершено!</h1>
             <div style="font-size: 20px; margin: 30px 0;">
                 <p>Большое спасибо за ваше участие и внимательные ответы!</p>
-                <p>Ваши данные сохранены в CSV файл, который автоматически загрузился на ваш компьютер.</p>
+                <p>Ваши данные успешно отправлены.</p>
             </div>
             <div style="background-color: #e8f5e9; padding: 30px; border-radius: 10px; margin: 30px auto; max-width: 600px;">
                 <h3>Код завершения исследования:</h3>
@@ -1211,13 +1217,6 @@
                 <p><strong>Ваша группа:</strong> ${experimentGroup || 'не определена'}</p>
                 <p><strong>Случайное число:</strong> ${randomNumber || 'не выбрано'}</p>
             </div>
-            <!-- NEW EMAIL INSTRUCTION -->
-            <div style="margin-top: 40px; padding: 25px; background-color: #fff3e0; border-radius: 10px; border: 2px solid #ff9800;">
-                <h3 style="color: #e65100;">📤 Важно!</h3>
-                <p>Пожалуйста, отправьте скачанный CSV-файл с вашими результатами на электронную почту исследователя:</p>
-                <p><a href="mailto:${researcherEmail}" style="font-size: 18px; color: #d84315; font-weight: bold;">${researcherEmail}</a></p>
-                <p>Это поможет нам включить ваши данные в анализ. Спасибо!</p>
-            </div>
             <div style="margin-top: 50px; padding: 20px; background-color: #e3f2fd; border-radius: 8px;">
                 <p><strong>Исследователь:</strong> Нсубуга Мозес</p>
                 <p><strong>Казанский федеральный университет</strong></p>
@@ -1230,7 +1229,7 @@
             <h1 style="color: #2e7d32;">✅ Study Complete!</h1>
             <div style="font-size: 20px; margin: 30px 0;">
                 <p>Thank you very much for your participation and careful responses!</p>
-                <p>Your data has been saved to a CSV file, which has been automatically downloaded to your computer.</p>
+                <p>Your data has been successfully submitted.</p>
             </div>
             <div style="background-color: #e8f5e9; padding: 30px; border-radius: 10px; margin: 30px auto; max-width: 600px;">
                 <h3>Study Completion Code:</h3>
@@ -1257,13 +1256,6 @@
                 <p><strong>Total: approximately 190 questions</strong></p>
                 <p><strong>Your group:</strong> ${experimentGroup || 'not determined'}</p>
                 <p><strong>Random number:</strong> ${randomNumber || 'not chosen'}</p>
-            </div>
-            <!-- NEW EMAIL INSTRUCTION -->
-            <div style="margin-top: 40px; padding: 25px; background-color: #fff3e0; border-radius: 10px; border: 2px solid #ff9800;">
-                <h3 style="color: #e65100;">📤 Important!</h3>
-                <p>Please send the downloaded CSV file with your results to the researcher's email:</p>
-                <p><a href="mailto:${researcherEmail}" style="font-size: 18px; color: #d84315; font-weight: bold;">${researcherEmail}</a></p>
-                <p>This will help us include your data in the analysis. Thank you!</p>
             </div>
             <div style="margin-top: 50px; padding: 20px; background-color: #e3f2fd; border-radius: 8px;">
                 <p><strong>Researcher:</strong> Nsubuga Moses</p>
