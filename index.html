@@ -210,18 +210,19 @@
                 experiment_group: experimentGroup,
                 jspsych: jsPsych.data.get().filter({}).values()
             };
-
-            const jsonString = JSON.stringify(fullData);
-
+        
+            // Кодируем как form data
+            const params = new URLSearchParams();
+            params.append('payload', JSON.stringify(fullData));
+        
             fetch(GOOGLE_SHEETS_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: jsonString
-            }).then(function() {
-                console.log("Данные отправлены на Google Sheets");
-            }).catch(function(err) {
-                console.warn("Ошибка отправки на Google Sheets:", err);
-            });
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            })
+            .then(response => response.text())
+            .then(() => console.log("Данные отправлены на Google Sheets"))
+            .catch(err => console.warn("Ошибка отправки на Google Sheets:", err));
         }
 
         // Инициализация jsPsych
