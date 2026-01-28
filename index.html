@@ -199,7 +199,7 @@
         }
 
         // URL для отправки данных в Google Sheets
-        const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbwBrzpxB2nd4KuexMohLrlUczm_tnTbn8J7mu86ET7Sh0YItB7HG307LemjCCmPg092/exec";
+        const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxNB-UfIXMdYP9kaq7MyMkeH9RiOHY2IfwjZcK5_eYkxfeffMYDLrO8zvvQ38e_pgYQTA/exec";
 
         // Сохранение данных - отправка на Google Sheets
         function saveData() {
@@ -213,7 +213,6 @@
 
             fetch(GOOGLE_SHEETS_URL, {
                 method: 'POST',
-                mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(fullData)
             }).then(function() {
