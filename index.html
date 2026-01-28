@@ -199,7 +199,7 @@
         }
 
         // URL для отправки данных в Google Sheets
-        const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbxNB-UfIXMdYP9kaq7MyMkeH9RiOHY2IfwjZcK5_eYkxfeffMYDLrO8zvvQ38e_pgYQTA/exec";
+        const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbx87Ube-zYib-BM1G_dVP5NS44XOAt7ZFth887H7MfDxcEanxyUPZpXUgbki3QsCt8ytA/exec";
 
         // Сохранение данных - отправка на Google Sheets
         function saveData() {
@@ -211,10 +211,12 @@
                 jspsych: jsPsych.data.get().filter({}).values()
             };
 
+            const jsonString = JSON.stringify(fullData);
+
             fetch(GOOGLE_SHEETS_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(fullData)
+                headers: { 'Content-Type': 'text/plain' },
+                body: jsonString
             }).then(function() {
                 console.log("Данные отправлены на Google Sheets");
             }).catch(function(err) {
